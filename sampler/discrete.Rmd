@@ -2,7 +2,7 @@
 title: "DiscreteModels"
 author: "Zhenhua Wang"
 date: "12/7/2019"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -44,6 +44,63 @@ $$
 \begin{aligned}
 P(\theta|y_1, ..., y_n) 
 &\propto P(y_1, ..., y_n|\theta)P(\theta) \\
-&\propto \theta^{\sum{y_i}} (1-\theta)^{n - \sum{y_i}}
+&\propto \theta^{\sum{y_i}} (1-\theta)^{n - \sum{y_i}} \times \theta^{a-1}(1-\theta)^{b-1} \\
+&\propto \theta^{(a+\sum y_i)-1} (1-\theta)^{(b + n-\sum y_i)} - 1 \\
+\theta|y_1, ..., y_n &\sim Beta(a + \sum y_i, b + n - \sum y_i)
 \end{aligned}
 $$
+
+After compute the posterior distribution for $\theta$, we could easily write out the sampler for $\theta$
+
+```{r}
+beta_binomial_sampler = function(S, y, a, b) {
+  y.sum = sum(y)
+  n = length(y)
+  an = a + y.sum
+  bn = b + n - y.sum
+  return(rbeta(S, an, bn))
+}
+```
+
+## Gamma-Poisson model
+
+Poisson distribution is a natural choice when modelling counts. The only parameter for Poisson is its mean ($\theta$). As before, we also write down its sampling model proportional to $\theta$. 
+
+$$
+\begin{aligned}
+y_1, ..., y_n | \theta &\sim Poisson(\theta) \\
+P(y_1, ..., y_n | \theta) &\propto \theta^{\sum y_i}e^{-n\theta}
+\end{aligned}
+$$
+
+Clearly, the conjugate prior for Poisson distribution is Gamma distribution.
+
+$$
+\begin{aligned}
+\theta &\sim Gamma(a, b) \\
+P(\theta) &\propto \theta^{a-1}e^{-b\theta}
+\end{aligned}
+$$
+
+Then, we could compute its posterior distribution easily.
+
+$$
+\begin{aligned}
+P(\theta | y_1, ..., y_n) 
+&\propto \theta^{\sum y_i}e^{-n\theta} \times \theta^{a-1}e^{-b\theta} \\
+&\propto \theta^{(a + \sum y_i)}e^{-(b+n)\theta} \\
+\theta | y_1, ..., y_n &\sim Gamma(a+\sum y_i, b + n)
+\end{aligned}
+$$
+
+After compute the posterior distribution for $\theta$, we could easily write out the sampler for $\theta$
+
+```{r}
+Gamma_Poisson_sampler = function(S, y, a, b) {
+  y.sum = sum(y)
+  n = length(y)
+  an = a + y.sum
+  bn = b + n
+  return(rgamma(S, an, bn))
+}
+```
